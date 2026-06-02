@@ -1,4 +1,8 @@
 # 🤖 Multi-Agent Research Assistant
+## Live Demo
+
+- Streamlit App: YOUR_STREAMLIT_APP_URL
+- GitHub Repository: YOUR_GITHUB_REPO_URL
 
 A cost-controlled AI-powered research assistant built using local LLMs, Ollama, Mistral, LangChain, and Streamlit.
 
