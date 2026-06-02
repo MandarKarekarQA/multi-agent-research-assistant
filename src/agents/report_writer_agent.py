@@ -1,37 +1,18 @@
-from langchain_ollama import OllamaLLM
-
-from src.utils.format_sources import format_sources
+from src.utils.model_provider import get_llm
 
 
 def write_report(
-        summary: str,
-        validation_feedback: str,
-        search_results: list[dict]
+    summary: str,
+    validation_feedback: str,
+    sources_text: str = "",
+    model_mode: str = "openai"
 ) -> str:
-    """
-    Report Writer Agent
-
-    Takes:
-    1. Research summary
-    2. Validation feedback
-    3. Real search result URLs
-
-    Produces:
-    Professional final report
-    """
-
-    llm = OllamaLLM(model="mistral")
-
-    sources = format_sources(search_results)
+    llm = get_llm(model_mode)
 
     prompt = f"""
 You are a professional business report writer.
 
-You will receive:
-
-1. A research summary
-2. Validation feedback
-3. Real source URLs
+Create a concise professional markdown report.
 
 Research Summary:
 {summary}
@@ -39,101 +20,60 @@ Research Summary:
 Validation Feedback:
 {validation_feedback}
 
-Real Sources:
-{sources}
+Sources:
+{sources_text}
 
-Create a professional report using the following structure:
+Report structure:
 
 # UK Electric Vehicle Competitor Research Report
 
 ## 1. Executive Summary
-
-Provide a short overview.
-
 ## 2. Market Overview
-
-Describe the current UK EV market.
-
 ## 3. Key Competitors
-
 Use a markdown table:
-
-| Company | Market Position | Strengths | Risks |
-|----------|----------|----------|----------|
+Company | Market Position | Strengths | Risks
 
 ## 4. Market Trends
-
-List major market trends.
-
 ## 5. Risks and Challenges
-
-List risks and challenges.
-
 ## 6. Recommendations
-
-Provide recommendations.
-
 ## 7. Limitations
-
-Mention any missing data or uncertainty.
-
 ## 8. Sources Used
 
-Use the real URLs provided.
-
-Important Rules:
-
-- Keep the report professional.
-- Use clear business language.
-- Do not invent statistics.
-- Mention when data is limited.
-- Use the supplied source URLs.
-- Never write "[Insert sources here]".
+Rules:
+- Keep it concise.
+- Do not invent exact statistics.
+- Use only information provided.
+- Mention limitations clearly.
 """
 
-    report = llm.invoke(prompt)
+    response = llm.invoke(prompt)
 
-    return report
+    if hasattr(response, "content"):
+        response = response.content
+
+    return response
 
 
 if __name__ == "__main__":
-
     sample_summary = """
-The UK electric vehicle market is growing due to consumer interest,
-government incentives, and charging infrastructure improvements.
-
-Key competitors include Tesla, BYD, BMW, Volkswagen,
-Hyundai, Kia, MG and Nissan.
-
-Challenges include battery costs,
-charging availability and consumer confidence.
-"""
+    UK EV market is growing. Key competitors include Tesla, Nissan, BMW, BYD,
+    Volkswagen, Kia, Hyundai and MG.
+    """
 
     sample_validation = """
-Validation Result: NEEDS IMPROVEMENT
+    Validation Result: NEEDS IMPROVEMENT
+    Add sources, limitations and clearer competitor comparison.
+    """
 
-Issues Found:
-- Missing specific statistics.
-- Source references are limited.
-- Risks could be explained in more detail.
-
-Suggested Improvements:
-- Add clearer competitor comparison.
-- Mention data limitations.
-- Add recommendations for businesses.
-"""
-
-    sample_sources = [
-        {
-            "title": "Example Source",
-            "url": "https://example.com"
-        }
-    ]
+    sample_sources = """
+    1. Example EV source - https://example.com
+    """
 
     result = write_report(
         sample_summary,
         sample_validation,
-        sample_sources
+        sample_sources,
+        model_mode="ollama"
     )
 
     print("\nFINAL REPORT:\n")

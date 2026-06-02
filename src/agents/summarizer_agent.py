@@ -1,73 +1,64 @@
 import json
 from pathlib import Path
-from datetime import datetime
 
-from langchain_ollama import OllamaLLM
-
-
-def save_summary(summary: str) -> None:
-    processed_folder = Path("data/processed")
-    processed_folder.mkdir(parents=True, exist_ok=True)
-
-    file_path = processed_folder / "summary.json"
-
-    summary_data = {
-        "timestamp": datetime.now().isoformat(),
-        "summary": summary
-    }
-
-    with open(file_path, "w", encoding="utf-8") as file:
-        json.dump(summary_data, file, indent=4)
-
-    print(f"Summary saved: {file_path}")
+from src.utils.model_provider import get_llm
 
 
-def summarize_research(research_data: dict) -> str:
-    """
-    Summarizer Agent:
-    Takes raw research data and creates a clean summary.
-    """
+def save_json(data, file_path: str) -> None:
+    path = Path(file_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
 
-    raw_research = research_data["raw_research"]
+    with open(path, "w", encoding="utf-8") as file:
+        json.dump(data, file, indent=4)
 
-    llm = OllamaLLM(model="mistral")
+
+def summarize_research(raw_research: str, model_mode: str = "openai") -> str:
+    llm = get_llm(model_mode)
 
     prompt = f"""
-You are a professional AI research summarizer.
+You are a summarizer agent.
 
-Your task:
-Convert the research into a short structured business summary.
+Summarize the research below into a short, clear business summary.
 
 Research:
 {raw_research}
 
-Create:
+Return:
 1. Market overview
 2. Main competitors
 3. Key trends
 4. Major risks
 
-Keep the answer concise and professional.
+Keep it concise.
+Do not invent exact numbers.
 """
 
-    summary = llm.invoke(prompt)
+    response = llm.invoke(prompt)
 
-    save_summary(summary)
+    if hasattr(response, "content"):
+        response = response.content
 
-    return summary
+    save_json(
+        {"summary": response},
+        "data/processed/summary.json"
+    )
+
+    print("Summary saved: data/processed/summary.json")
+
+    return response
 
 
 if __name__ == "__main__":
+    sample_research = """
+    The UK electric vehicle market is growing. Major competitors include Tesla,
+    Nissan, BMW, BYD, Volkswagen, Kia, Hyundai and MG. Key challenges include
+    charging infrastructure, battery costs and consumer confidence.
+    """
 
-    sample_research = {
-        "raw_research": """
-The UK EV market is growing rapidly.
-Major competitors include Tesla, BYD, BMW and Volkswagen.
-Challenges include charging infrastructure and battery costs.
-"""
-    }
-
-    result = summarize_research(sample_research)
+    result = summarize_research(
+        sample_research,
+        model_mode="ollama"
+    )
 
     print("\nSUMMARY:\n")
     print(result)

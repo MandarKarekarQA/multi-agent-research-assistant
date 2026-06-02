@@ -1,56 +1,50 @@
-from langchain_ollama import OllamaLLM
+from src.utils.model_provider import get_llm
 
 
-def validate_research(summary: str) -> str:
-    """
-    Validator Agent:
-    Checks whether the research summary is useful, balanced, and source-aware.
-    """
-
-    llm = OllamaLLM(model="mistral")
+def validate_research(summary: str, model_mode: str = "openai") -> str:
+    llm = get_llm(model_mode)
 
     prompt = f"""
-You are a research quality validator.
+You are a validator agent.
 
 Review the research summary below.
 
-Research summary:
+Summary:
 {summary}
 
-Check the summary for:
+Check:
+1. Is it clear?
+2. Is it too vague?
+3. Are sources or limitations missing?
+4. What should be improved?
 
-1. Missing information
-2. Weak or vague claims
-3. Missing competitors or key players
-4. Missing risks
-5. Missing source references
-6. Possible improvements
+Return:
+- Validation result: PASS or NEEDS IMPROVEMENT
+- Issues found
+- Suggested improvements
 
-Return your answer in this format:
-
-Validation Result:
-PASS or NEEDS IMPROVEMENT
-
-Issues Found:
-- ...
-
-Suggested Improvements:
-- ...
+Keep it concise.
 """
 
-    validation_result = llm.invoke(prompt)
+    response = llm.invoke(prompt)
 
-    return validation_result
+    if hasattr(response, "content"):
+        response = response.content
+
+    return response
 
 
 if __name__ == "__main__":
     sample_summary = """
-The UK electric vehicle market is growing quickly.
-Main competitors include Tesla, BMW, BYD, Volkswagen, Hyundai, Kia and MG.
-Challenges include charging infrastructure, battery costs and consumer confidence.
-"""
+    The UK electric vehicle market is growing. Main competitors include Tesla,
+    Nissan, BMW, BYD, Volkswagen, Kia, Hyundai and MG. Challenges include
+    charging infrastructure, battery costs and consumer confidence.
+    """
 
-    result = validate_research(sample_summary)
+    result = validate_research(
+        sample_summary,
+        model_mode="ollama"
+    )
 
     print("\nVALIDATION OUTPUT:\n")
     print(result)
